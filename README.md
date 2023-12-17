@@ -6,6 +6,7 @@
 以架構而言此產品為ETF組合Token與結合Compound v2的借貸協議商品，以便使用者可以追蹤指數與領取固定利息收入
 1. 角色
 * Users使用者:參與指數追蹤的一般使用者，可以依指定比例原生Token存入鑄造等比的ETF Token，此ETF Token是個ERC20協議支援ERC20協議功能，使用者可以申請持有期間的利息，如果使用者需要解除此EFT Token也可以註銷此代幣因而獲得原始比例的原生代幣
+
 1)mint鑄造:呼叫EFT Contract mint方法並且傳送原生代幣(ig.weth.wbtc)至EFT Contract，EFT Contract會立刻傳入Compound cToken Contract的mint返回對應的cToken存在EFT Contract，EFT Contract會記錄該使用者所屬的cToken與block index等資料
 
 Users =[transfer tokens(ig.weth.wbtc)]=> ETF Contract =[transfer tokens(ig.weth.wbtc)]=> Compound cToken Contract
