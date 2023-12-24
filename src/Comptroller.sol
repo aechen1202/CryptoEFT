@@ -8,6 +8,8 @@ import "./ComptrollerInterface.sol";
 import "./ComptrollerStorage.sol";
 import "./Unitroller.sol";
 import "./Governance/Comp.sol";
+import "./ETFErc20InterFace.sol";
+
 
 /**
  * @title Compound's Comptroller Contract
@@ -246,6 +248,17 @@ contract Comptroller is ComptrollerV7Storage, ComptrollerInterface, ComptrollerE
         // Keep the flywheel moving
         updateCompSupplyIndex(cToken);
         distributeSupplierComp(cToken, minter);
+
+        return uint(Error.NO_ERROR);
+    }
+
+    
+    function mintETFAllowed(address eftToken) override external view returns (uint) {
+        // Pausing is a very serious situation - we revert to sound the alarms
+        //require(!mintGuardianPaused[cToken], "mint is paused");
+        if (!ETFMarkets[eftToken].isListed) {
+            return uint(Error.MARKET_NOT_LISTED);
+        }
 
         return uint(Error.NO_ERROR);
     }
@@ -986,6 +999,44 @@ contract Comptroller is ComptrollerV7Storage, ComptrollerInterface, ComptrollerE
          supplyState.block = borrowState.block = blockNumber;
     }
 
+     function _supportEFTMarket(address eftToken) external returns (uint) {
+        if (msg.sender != admin) {
+            return fail(Error.UNAUTHORIZED, FailureInfo.SUPPORT_MARKET_OWNER_CHECK);
+        }
+
+        if (ETFMarkets[eftToken].isListed) {
+            return fail(Error.MARKET_ALREADY_LISTED, FailureInfo.SUPPORT_MARKET_EXISTS);
+        }
+
+        //cToken.isCToken(); // Sanity check to make sure its really a CToken
+
+        ETFMarket storage newMarket = ETFMarkets[eftToken];
+        newMarket.name = ETFErc20InterFace(eftToken).getName();
+        newMarket.description = ETFErc20InterFace(eftToken).getDescription();
+        //ETF[] tokenETF = ETFErc20InterFace(eftToken).getTokenElement();
+        //newMarket.token = ETFErc20InterFace(eftToken).getTokenElement();
+        //for (uint256 i = 0; i < tokenETF; i++) {
+        //    newMarket.push(tokenETF[i]);
+        //}
+        newMarket.isListed = true;
+
+        //Check cToken
+        for (uint i = 0; i < ETFErc20InterFace(eftToken).getTokenElement().length; i ++) {
+            CTokenInterface(ETFErc20InterFace(eftToken).getTokenElement()[i].cToken).isCToken();
+            
+            if (!markets[ETFErc20InterFace(eftToken).getTokenElement()[i].cToken].isListed) {
+                return uint(Error.MARKET_NOT_LISTED);
+            }
+        }
+
+        //_addMarketInternal(address(cToken));
+        //_initializeMarket(address(cToken));
+
+        //emit MarketListed(cToken);
+
+        return uint(Error.NO_ERROR);
+    }
+
 
     /**
       * @notice Set the given borrow caps for the given cToken markets. Borrowing that brings total borrows to or above borrow cap will revert.
@@ -1468,4 +1519,6 @@ contract Comptroller is ComptrollerV7Storage, ComptrollerInterface, ComptrollerE
     function getCompAddress() virtual public view returns (address) {
         return 0xc00e94Cb662C3520282E6f5717214004A7f26888;
     }
+
+
 }

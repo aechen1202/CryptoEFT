@@ -78,6 +78,21 @@ contract ComptrollerV2Storage is ComptrollerV1Storage {
      */
     mapping(address => Market) public markets;
 
+    struct ETF { 
+        address token;
+        address cToken;
+        uint proportion;
+        uint minimum;
+    }
+
+    struct ETFMarket { 
+        ETF[] token;
+        string name;
+        string description;
+        bool isListed;
+    }
+    mapping(address => ETFMarket) public ETFMarkets;
+
 
     /**
      * @notice The Pause Guardian can pause certain actions as a safety mechanism.
