@@ -81,23 +81,26 @@ contract ETFTest is Test {
         unitrollerProxy._supportMarket(CToken(address(cWETH)));
 
         //ETF Token
+        //1顆EFT = 0.01 wBTC + 0.0005 wETH
         ETFErc20InterFace.ETF[] memory ETFList = new ETFErc20InterFace.ETF[](2);
 
+        //假設wBTC 40000U，0.01顆(0.01*e18)為新的1顆eft token比例，最少要0.001顆wBTC
         ETFErc20InterFace.ETF memory WBTCElement = ETFErc20InterFace.ETF(
             {
                 token: address(wBTC),
                 cToken: address(cWBTC),
-                proportion: 10000,
-                minimum: 1000
+                proportion: 0.01 * 1e18,
+                minimum: 0.001 * 1e18
             });
         ETFList[0] = WBTCElement;
 
+        //假設wETH 2000U，0.0005顆(0.0005*e18)為新的1顆eft token比例，最少要0.00005顆wETH
         ETFErc20InterFace.ETF memory WETHElement = ETFErc20InterFace.ETF(
             {
                 token: address(wETH),
                 cToken: address(cWETH),
-                proportion: 10000,
-                minimum: 1000
+                proportion: 0.0005 * 1e18,
+                minimum: 0.00005 * 1e18
             });
         ETFList[1] = WETHElement;
 
@@ -111,31 +114,33 @@ contract ETFTest is Test {
 
     function test_mint() public {
         vm.startPrank(user1);
-        deal(address(wBTC), user1, 100 ether);
-        deal(address(wETH), user1, 100 ether);
+        deal(address(wBTC), user1, 0.01 ether);
+        deal(address(wETH), user1, 0.0005 ether);
         ETFErc20InterFace.ETF[] memory etfMint = new ETFErc20InterFace.ETF[](2);
 
         ETFErc20InterFace.ETF memory WBTCElement = ETFErc20InterFace.ETF(
             {
                 token: address(wBTC),
-                cToken: address(cWBTC),
-                proportion: 10000,
-                minimum: 1000
+                cToken: address(0),
+                proportion: 0.01 * 1e18,
+                minimum: 0
             });
         etfMint[0] = WBTCElement;
 
         ETFErc20InterFace.ETF memory WETHElement = ETFErc20InterFace.ETF(
             {
                 token: address(wETH),
-                cToken: address(cWETH),
-                proportion: 10000,
-                minimum: 1000
+                cToken: address(0),
+                proportion: 0.0005 * 1e18,
+                minimum: 0
             });
         etfMint[1] = WETHElement;
-        wBTC.approve(address(wbtc_weth_eft), 10000);
-        wETH.approve(address(wbtc_weth_eft), 10000);
-        uint i =wbtc_weth_eft.mint(etfMint);
-        console2.log(i);
+        wBTC.approve(address(wbtc_weth_eft),  0.01 * 1e18);
+        wETH.approve(address(wbtc_weth_eft), 0.0005 * 1e18);
+        wbtc_weth_eft.mint(etfMint);
+       assertEq(wBTC.balanceOf(user1), 0);
+       assertEq(wETH.balanceOf(user1), 0);
+       
     }
 }
 

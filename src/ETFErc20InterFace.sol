@@ -17,4 +17,6 @@ abstract contract ETFErc20InterFace{
 
 
     function _setComptroller(ComptrollerInterface newComptroller) virtual public returns (bool);
+
+    function balanceOf(address account) virtual external view returns (uint256);
 }

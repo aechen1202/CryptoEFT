@@ -63,10 +63,10 @@ contract ETFErc20 is ETFErc20InterFace{
         }
 
         //mint eftToken
-        totalSupply = totalSupply + percentage;
-        accountTokens[msg.sender] = accountTokens[msg.sender] + percentage;
+        totalSupply = totalSupply + percentage * 1e18;
+        accountTokens[msg.sender] = accountTokens[msg.sender] + percentage * 1e18;
 
-        return percentage;
+        return percentage * 1e18;
     }
 
     function redeem(uint redeemETF) override external returns (uint) {
@@ -114,5 +114,9 @@ contract ETFErc20 is ETFErc20InterFace{
         //emit NewComptroller(oldComptroller, newComptroller);
 
         return true;
+    }
+
+     function balanceOf(address account) override external view returns (uint256) {
+        return accountTokens[account];
     }
 }
