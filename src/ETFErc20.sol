@@ -72,13 +72,13 @@ contract ETFErc20 is ETFErc20InterFace{
     function redeem(uint redeemETF) override external returns (uint) {
         require(accountTokens[msg.sender] >= redeemETF,"redeem amount exceeds balance");
         for (uint i = 0; i < tokenElement.length; i ++) {
-            uint redeemCtoken = redeemETF * tokenElement[i].proportion;
+            uint redeemCtoken = (redeemETF * tokenElement[i].proportion) / 1e18;
             CErc20Interface(tokenElement[i].cToken).redeem(redeemCtoken);
             //claim interest
             //redeemCtoken+interest
 
             // transfer to user with interest
-            //IERC20(tokenElement[i].token).transfer(msg.sender,redeemCtoken);
+            IERC20(tokenElement[i].token).transfer(msg.sender,redeemCtoken);
         }
         accountTokens[msg.sender] -= redeemETF;
         totalSupply -= redeemETF;

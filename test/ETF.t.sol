@@ -81,10 +81,10 @@ contract ETFTest is Test {
         unitrollerProxy._supportMarket(CToken(address(cWETH)));
 
         //ETF Token
-        //1顆EFT = 0.01 wBTC + 0.0005 wETH
+        //1顆EFT = 0.01 wBTC + 0.2 wETH
         ETFErc20InterFace.ETF[] memory ETFList = new ETFErc20InterFace.ETF[](2);
 
-        //假設wBTC 40000U，0.01顆(0.01*e18)為新的1顆eft token比例，最少要0.001顆wBTC
+        //假設wBTC 40000U，0.01顆(0.01*1e18)為新的1顆eft token比例，最少要0.001顆wBTC
         ETFErc20InterFace.ETF memory WBTCElement = ETFErc20InterFace.ETF(
             {
                 token: address(wBTC),
@@ -94,13 +94,13 @@ contract ETFTest is Test {
             });
         ETFList[0] = WBTCElement;
 
-        //假設wETH 2000U，0.0005顆(0.0005*e18)為新的1顆eft token比例，最少要0.00005顆wETH
+        //假設wETH 2000U，0.2顆(0.2*1e18)為新的1顆eft token比例，最少要0.02顆wETH
         ETFErc20InterFace.ETF memory WETHElement = ETFErc20InterFace.ETF(
             {
                 token: address(wETH),
                 cToken: address(cWETH),
-                proportion: 0.0005 * 1e18,
-                minimum: 0.00005 * 1e18
+                proportion: 0.2 * 1e18,
+                minimum: 0.02 * 1e18
             });
         ETFList[1] = WETHElement;
 
@@ -108,14 +108,14 @@ contract ETFTest is Test {
         wbtc_weth_eft._setComptroller(unitrollerProxy);
         //可以supportEFTMarket條件對應的cToken地址都需要supportMarket
         uint code = unitrollerProxy._supportEFTMarket(address(wbtc_weth_eft));
-        console2.log(code);
         assertEq(code, 0);
     }
 
-    function test_mint() public {
+    //剛好數字比例的mint與redeem
+    function test_mint_redeem() public {
         vm.startPrank(user1);
         deal(address(wBTC), user1, 0.01 ether);
-        deal(address(wETH), user1, 0.0005 ether);
+        deal(address(wETH), user1, 0.2 ether);
         ETFErc20InterFace.ETF[] memory etfMint = new ETFErc20InterFace.ETF[](2);
 
         ETFErc20InterFace.ETF memory WBTCElement = ETFErc20InterFace.ETF(
@@ -131,16 +131,63 @@ contract ETFTest is Test {
             {
                 token: address(wETH),
                 cToken: address(0),
-                proportion: 0.0005 * 1e18,
+                proportion: 0.2 * 1e18,
                 minimum: 0
             });
         etfMint[1] = WETHElement;
         wBTC.approve(address(wbtc_weth_eft),  0.01 * 1e18);
-        wETH.approve(address(wbtc_weth_eft), 0.0005 * 1e18);
+        wETH.approve(address(wbtc_weth_eft), 0.2 * 1e18);
         wbtc_weth_eft.mint(etfMint);
-       assertEq(wBTC.balanceOf(user1), 0);
-       assertEq(wETH.balanceOf(user1), 0);
-       
+        assertEq(wbtc_weth_eft.balanceOf(user1), 1 * 1e18);
+        assertEq(wBTC.balanceOf(user1), 0);
+        assertEq(wETH.balanceOf(user1), 0);
+        assertEq(cWBTC.balanceOf(address(wbtc_weth_eft)), 0.01 * 1e18);
+        assertEq(cWETH.balanceOf(address(wbtc_weth_eft)), 0.2 * 1e18);
+
+        wbtc_weth_eft.redeem(wbtc_weth_eft.balanceOf(user1));
+        assertEq(wbtc_weth_eft.balanceOf(user1), 0);
+        assertEq(wBTC.balanceOf(user1), 0.01 * 1e18);
+        assertEq(wETH.balanceOf(user1), 0.2 * 1e18);
+        assertEq(cWBTC.balanceOf(address(wbtc_weth_eft)), 0);
+        assertEq(cWETH.balanceOf(address(wbtc_weth_eft)), 0);
+        
+    }
+
+
+    //不正確比例的mint
+    function test_mint_payback() public {
+        vm.startPrank(user1);
+        deal(address(wBTC), user1, 0.01 ether);
+        deal(address(wETH), user1, 0.3 ether);
+        ETFErc20InterFace.ETF[] memory etfMint = new ETFErc20InterFace.ETF[](2);
+
+        ETFErc20InterFace.ETF memory WBTCElement = ETFErc20InterFace.ETF(
+            {
+                token: address(wBTC),
+                cToken: address(0),
+                proportion: 0.01 * 1e18,
+                minimum: 0
+            });
+        etfMint[0] = WBTCElement;
+
+        ETFErc20InterFace.ETF memory WETHElement = ETFErc20InterFace.ETF(
+            {
+                token: address(wETH),
+                cToken: address(0),
+                proportion: 0.3 * 1e18,
+                minimum: 0
+            });
+        etfMint[1] = WETHElement;
+        wBTC.approve(address(wbtc_weth_eft),  0.01 * 1e18);
+        wETH.approve(address(wbtc_weth_eft), 0.2 * 1e18);
+        wbtc_weth_eft.mint(etfMint);
+        assertEq(wbtc_weth_eft.balanceOf(user1), 1 * 1e18);
+        assertEq(wBTC.balanceOf(user1), 0);
+        //因為依比例只需要0.2 eth，而參數去傳入0.3 eth，但是合約實際只會接收0.2 eth
+        assertEq(wETH.balanceOf(user1), 0.1 * 1e18);
+        assertEq(cWBTC.balanceOf(address(wbtc_weth_eft)), 0.01 * 1e18);
+        assertEq(cWETH.balanceOf(address(wbtc_weth_eft)), 0.2 * 1e18);
+        
     }
 }
 

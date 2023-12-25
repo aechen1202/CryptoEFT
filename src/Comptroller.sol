@@ -1008,23 +1008,21 @@ contract Comptroller is ComptrollerV7Storage, ComptrollerInterface, ComptrollerE
             return fail(Error.MARKET_ALREADY_LISTED, FailureInfo.SUPPORT_MARKET_EXISTS);
         }
 
-        //cToken.isCToken(); // Sanity check to make sure its really a CToken
-
+        // insert new ETF data to comtroller
         ETFMarket storage newMarket = ETFMarkets[eftToken];
         newMarket.name = ETFErc20InterFace(eftToken).getName();
         newMarket.description = ETFErc20InterFace(eftToken).getDescription();
-        //ETF[] tokenETF = ETFErc20InterFace(eftToken).getTokenElement();
-        //newMarket.token = ETFErc20InterFace(eftToken).getTokenElement();
-        //for (uint256 i = 0; i < tokenETF; i++) {
-        //    newMarket.push(tokenETF[i]);
-        //}
+        ETFErc20InterFace.ETF[] memory tokenETF = ETFErc20InterFace(eftToken).getTokenElement();
+        for (uint256 i = 0; i < tokenETF.length; i++) {
+            newMarket.token.push(tokenETF[i]);
+        }
         newMarket.isListed = true;
 
         //Check cToken
-        for (uint i = 0; i < ETFErc20InterFace(eftToken).getTokenElement().length; i ++) {
-            CTokenInterface(ETFErc20InterFace(eftToken).getTokenElement()[i].cToken).isCToken();
+        for (uint i = 0; i < newMarket.token.length; i ++) {
+            CTokenInterface(newMarket.token[i].cToken).isCToken();
             
-            if (!markets[ETFErc20InterFace(eftToken).getTokenElement()[i].cToken].isListed) {
+            if (!markets[newMarket.token[i].cToken].isListed) {
                 return uint(Error.MARKET_NOT_LISTED);
             }
         }

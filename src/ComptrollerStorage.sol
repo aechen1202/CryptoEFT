@@ -3,6 +3,7 @@ pragma solidity ^0.8.10;
 
 import "./CToken.sol";
 import "./PriceOracle.sol";
+import "./ETFErc20InterFace.sol";
 
 contract UnitrollerAdminStorage {
     /**
@@ -78,15 +79,8 @@ contract ComptrollerV2Storage is ComptrollerV1Storage {
      */
     mapping(address => Market) public markets;
 
-    struct ETF { 
-        address token;
-        address cToken;
-        uint proportion;
-        uint minimum;
-    }
-
     struct ETFMarket { 
-        ETF[] token;
+        ETFErc20InterFace.ETF[] token;
         string name;
         string description;
         bool isListed;
