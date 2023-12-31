@@ -30,6 +30,8 @@ contract ETFTest is Test {
 
     address public admin = makeAddr("admin");
     address public user1 = makeAddr("user1");
+    address public user2 = makeAddr("user2");
+    address public user3 = makeAddr("user3");
 
     function setUp() public {
         vm.startPrank(admin);
@@ -37,7 +39,7 @@ contract ETFTest is Test {
         wETH = new erc20Token("wETH","wETH");
 
         //InterestRateModel
-        whitePaperInterestRateModel=new WhitePaperInterestRateModel(0,0);
+        whitePaperInterestRateModel=new WhitePaperInterestRateModel(10 * 10**18  ,10 * 10**18);
 
         //PriceOracle
         priceOracle = new SimplePriceOracle();
@@ -79,6 +81,13 @@ contract ETFTest is Test {
             new bytes(0)
         );
         unitrollerProxy._supportMarket(CToken(address(cWETH)));
+        //在 Oracle 中設定一顆 WBTC 的價格為 $40000，一顆 WETH 的價格為 $2000
+        priceOracle.setUnderlyingPrice(CToken(address(cWBTC)),40000 * 1e18);
+        priceOracle.setUnderlyingPrice(CToken(address(cWETH)),2000 * 1e18);
+
+        //cWBTC,cWETH 的 collateral factor 為 90%
+        unitrollerProxy._setCollateralFactor(CToken(address(cWBTC)),1e17);
+        unitrollerProxy._setCollateralFactor(CToken(address(cWETH)),1e17);
 
         //ETF Token
         //1顆EFT = 0.01 wBTC + 0.2 wETH
@@ -109,6 +118,8 @@ contract ETFTest is Test {
         //可以supportEFTMarket條件對應的cToken地址都需要supportMarket
         uint code = unitrollerProxy._supportEFTMarket(address(wbtc_weth_eft));
         assertEq(code, 0);
+
+      
     }
 
     //剛好數字比例的mint與redeem
@@ -189,6 +200,71 @@ contract ETFTest is Test {
         assertEq(cWETH.balanceOf(address(wbtc_weth_eft)), 0.2 * 1e18);
         
     }
+
+     function test_borrow() public {
+        _EFTmint();
+        vm.startPrank(user2);
+        deal(address(wBTC), user2, 1000 ether);
+        deal(address(wETH), user2, 10000 ether);
+        wBTC.approve(address(cWBTC), type(uint256).max);
+        wETH.approve(address(cWETH), type(uint256).max);
+        cWBTC.mint(1000 ether);
+
+        address[] memory cTokenAddr = new address[](1);
+        cTokenAddr[0] = address(cWBTC);
+        unitrollerProxy.enterMarkets(cTokenAddr);
+        cWETH.borrow(100 ether);
+        vm.roll(10000000);
+        cWETH.repayBorrow(cWETH.borrowBalanceCurrent(user2));
+
+        deal(address(wBTC), user3, 5000 ether);
+        deal(address(wETH), user3, 100000 ether);
+        vm.startPrank(user3);
+        wBTC.approve(address(cWBTC), type(uint256).max);
+        wETH.approve(address(cWETH), type(uint256).max);
+        cWETH.mint(wETH.balanceOf(user3));
+        cTokenAddr[0] = address(cWETH);
+        unitrollerProxy.enterMarkets(cTokenAddr);
+        cWBTC.borrow(10 ether);
+        vm.roll(100000000);
+        cWBTC.repayBorrow(cWBTC.borrowBalanceCurrent(user3));
+
+        vm.startPrank(user1);
+        wbtc_weth_eft.claimIntrerstToETF();
+        wbtc_weth_eft.redeem(wbtc_weth_eft.balanceOf(user1));
+
+        console2.log(wBTC.balanceOf(address(wbtc_weth_eft)));
+        console2.log(wETH.balanceOf(address(wbtc_weth_eft)));
+     }
+
+     function _EFTmint() public{
+        vm.startPrank(user1);
+        deal(address(wBTC), user1, 1000 ether);
+        deal(address(wETH), user1, 20000 ether);
+        ETFErc20InterFace.ETF[] memory etfMint = new ETFErc20InterFace.ETF[](2);
+
+        ETFErc20InterFace.ETF memory WBTCElement = ETFErc20InterFace.ETF(
+            {
+                token: address(wBTC),
+                cToken: address(0),
+                proportion: 1000 ether,
+                minimum: 0
+            });
+        etfMint[0] = WBTCElement;
+
+        ETFErc20InterFace.ETF memory WETHElement = ETFErc20InterFace.ETF(
+            {
+                token: address(wETH),
+                cToken: address(0),
+                proportion: 20000 ether,
+                minimum: 0
+            });
+        etfMint[1] = WETHElement;
+        wBTC.approve(address(wbtc_weth_eft),  1000 ether);
+        wETH.approve(address(wbtc_weth_eft),20000 ether);
+        wbtc_weth_eft.mint(etfMint);
+        assertEq(wbtc_weth_eft.balanceOf(user1), 100000 ether);
+     }
 }
 
 contract erc20Token is ERC20 {

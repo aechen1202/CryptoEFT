@@ -17,6 +17,7 @@ contract ETFErc20 is ETFErc20InterFace{
     uint public totalSupply;
     string public description;
     mapping (address => uint) internal accountTokens;
+    address[] public leaf;
     
 
     address public admin;
@@ -73,7 +74,8 @@ contract ETFErc20 is ETFErc20InterFace{
         require(accountTokens[msg.sender] >= redeemETF,"redeem amount exceeds balance");
         for (uint i = 0; i < tokenElement.length; i ++) {
             uint redeemCtoken = (redeemETF * tokenElement[i].proportion) / 1e18;
-            CErc20Interface(tokenElement[i].cToken).redeem(redeemCtoken);
+            uint code = CErc20Interface(tokenElement[i].cToken).redeemUnderlying(redeemCtoken);
+           
             //claim interest
             //redeemCtoken+interest
 
@@ -81,8 +83,25 @@ contract ETFErc20 is ETFErc20InterFace{
             IERC20(tokenElement[i].token).transfer(msg.sender,redeemCtoken);
         }
         accountTokens[msg.sender] -= redeemETF;
+        
         totalSupply -= redeemETF;
+        
         return accountTokens[msg.sender];
+    }
+
+    function claimIntrerstToETF() override external returns (bool) {
+         for (uint i = 0; i < tokenElement.length; i ++) {
+            uint tokenBalanceBefore = IERC20(tokenElement[0].token).balanceOf(address(this));
+
+            uint redeemCtoken =  CTokenInterface(tokenElement[i].cToken).balanceOf(address(this));
+            
+            CErc20Interface(tokenElement[i].cToken).redeem(redeemCtoken);
+          
+            uint actualMintAmount = (tokenElement[i].proportion * totalSupply)/ 1e18;
+            IERC20(tokenElement[i].token).approve(tokenElement[i].cToken, actualMintAmount);
+            CErc20Interface(tokenElement[i].cToken).mint(actualMintAmount);
+           
+        }
     }
 
     function getName() override external view returns (string memory) {
