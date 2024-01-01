@@ -11,6 +11,7 @@ abstract contract ETFErc20InterFace{
     function redeem(uint redeemETF) virtual external returns (uint);
     function getName() virtual external view returns (string memory);
     function claimIntrerstToETF() virtual external returns (bool);
+    function claim() virtual external returns (bool);
     function getDescription() virtual external view returns (string memory);
 
     function getTokenElement() virtual external view returns (ETF[] memory);

@@ -17,8 +17,20 @@ contract ETFErc20 is ETFErc20InterFace{
     uint public totalSupply;
     string public description;
     mapping (address => uint) internal accountTokens;
-    address[] public leaf;
     
+    //interest
+    struct interest { 
+        address token;
+        uint interest;
+    }
+    struct interestBlock { 
+        interest[] tokenInterest;
+        uint totalSupply;
+        uint blockNumber;
+    }
+    interestBlock[] interestHistory;
+    address[] holders;
+    mapping(address=>mapping(address=>uint)) interestBalance;
 
     address public admin;
     ComptrollerInterface public comptroller;
@@ -66,7 +78,7 @@ contract ETFErc20 is ETFErc20InterFace{
         //mint eftToken
         totalSupply = totalSupply + percentage * 1e18;
         accountTokens[msg.sender] = accountTokens[msg.sender] + percentage * 1e18;
-
+        holders.push(msg.sender);
         return percentage * 1e18;
     }
 
@@ -90,8 +102,12 @@ contract ETFErc20 is ETFErc20InterFace{
     }
 
     function claimIntrerstToETF() override external returns (bool) {
-         for (uint i = 0; i < tokenElement.length; i ++) {
-            uint tokenBalanceBefore = IERC20(tokenElement[0].token).balanceOf(address(this));
+
+        interestBlock storage _interestBlock = interestHistory.push();
+        _interestBlock.blockNumber = block.number;
+        _interestBlock.totalSupply = totalSupply;
+
+        for (uint i = 0; i < tokenElement.length; i ++) {
 
             uint redeemCtoken =  CTokenInterface(tokenElement[i].cToken).balanceOf(address(this));
             
@@ -100,7 +116,48 @@ contract ETFErc20 is ETFErc20InterFace{
             uint actualMintAmount = (tokenElement[i].proportion * totalSupply)/ 1e18;
             IERC20(tokenElement[i].token).approve(tokenElement[i].cToken, actualMintAmount);
             CErc20Interface(tokenElement[i].cToken).mint(actualMintAmount);
+
+            uint tokenBalance = IERC20(tokenElement[i].token).balanceOf(address(this));
+
+            interest memory _interest = interest(
+            {
+                token: tokenElement[i].token,
+                interest: tokenBalance
+            });
+            _interestBlock.tokenInterest.push(_interest);
+        }
+
+        calculateUserInterest();
+    }
+
+    function calculateUserInterest() internal returns (bool) {
+        for (uint i = 0; i < holders.length; i ++) {
+           if(accountTokens[holders[i]]>0){
+            for(uint j = 0; j < interestHistory[interestHistory.length-1].tokenInterest.length; j++){
+                address token = interestHistory[interestHistory.length-1].tokenInterest[j].token;
+                uint interest = interestHistory[interestHistory.length-1].tokenInterest[j].interest;
+                uint totalSupply = interestHistory[interestHistory.length-1].totalSupply;
+                uint blockNumber = interestHistory[interestHistory.length-1].blockNumber;
+            
+                interestBalance[holders[i]][token] = interestBalance[holders[i]][token] + ((interest * accountTokens[holders[i]]) / (totalSupply));
+            }
+
+           }
            
+        }
+        return true;
+    }
+
+    function claim() override external returns (bool) {
+        for (uint i = 0; i < tokenElement.length; i ++) {
+           
+            if(interestBalance[msg.sender][tokenElement[i].token] > 0){
+                uint claimBalance = interestBalance[msg.sender][tokenElement[i].token];
+                interestBalance[msg.sender][tokenElement[i].token] = 0;
+                claimBalance = claimBalance;
+                console.log("claimBalance",claimBalance);
+                IERC20(tokenElement[i].token).transfer(msg.sender,claimBalance);
+            }
         }
     }
 

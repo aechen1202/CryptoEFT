@@ -232,7 +232,7 @@ contract ETFTest is Test {
         vm.startPrank(user1);
         wbtc_weth_eft.claimIntrerstToETF();
         wbtc_weth_eft.redeem(wbtc_weth_eft.balanceOf(user1));
-
+        wbtc_weth_eft.claim();
         console2.log(wBTC.balanceOf(address(wbtc_weth_eft)));
         console2.log(wETH.balanceOf(address(wbtc_weth_eft)));
      }
