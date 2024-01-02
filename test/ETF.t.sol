@@ -164,7 +164,6 @@ contract ETFTest is Test {
         
     }
 
-
     //不正確比例的mint
     function test_mint_payback() public {
         vm.startPrank(user1);
@@ -201,8 +200,9 @@ contract ETFTest is Test {
         
     }
 
-     function test_borrow() public {
-        _EFTmint();
+    //單一user簡單claim利息
+    function test_borrow_claim1() public {
+        _EtfOneUserMint();
         vm.startPrank(user2);
         deal(address(wBTC), user2, 1000 ether);
         deal(address(wETH), user2, 10000 ether);
@@ -230,14 +230,40 @@ contract ETFTest is Test {
         cWBTC.repayBorrow(cWBTC.borrowBalanceCurrent(user3));
 
         vm.startPrank(user1);
+        //將cToken利息轉入ETF Contract
         wbtc_weth_eft.claimIntrerstToETF();
         wbtc_weth_eft.redeem(wbtc_weth_eft.balanceOf(user1));
+        //拿回原始數量代幣
+        assertEq(wBTC.balanceOf(user1), 1000 ether);
+        assertEq(wETH.balanceOf(user1), 20000 ether);
+        //user1 claim interest
         wbtc_weth_eft.claim();
-        console2.log(wBTC.balanceOf(address(wbtc_weth_eft)));
-        console2.log(wETH.balanceOf(address(wbtc_weth_eft)));
+        assertGe(wBTC.balanceOf(user1), 1000 ether);
+        assertGe(wETH.balanceOf(user1), 20000 ether);
+        assertEq(wBTC.balanceOf(address(wbtc_weth_eft)), 0);
+        assertEq(wETH.balanceOf(address(wbtc_weth_eft)), 0);
      }
 
-     function _EFTmint() public{
+    //erc20 testing
+    function test_erc20() public {
+        _EtfOneUserMint();
+        vm.startPrank(user1);
+        wbtc_weth_eft.transfer(user2, 10000 ether);
+        assertEq(wbtc_weth_eft.balanceOf(user1), 90000 ether);
+        assertEq(wbtc_weth_eft.balanceOf(user2), 10000 ether);
+
+        wbtc_weth_eft.approve(user2, 10000 ether);
+        assertEq(wbtc_weth_eft.allowance(user1, user2), 10000 ether);
+
+        vm.startPrank(user2);
+        wbtc_weth_eft.transferFrom(user1, user3, 10000 ether);
+        assertEq(wbtc_weth_eft.balanceOf(user1), 80000 ether);
+        assertEq(wbtc_weth_eft.balanceOf(user3), 10000 ether);
+
+    }
+
+    //單一User mint
+     function _EtfOneUserMint() public{
         vm.startPrank(user1);
         deal(address(wBTC), user1, 1000 ether);
         deal(address(wETH), user1, 20000 ether);
@@ -265,6 +291,7 @@ contract ETFTest is Test {
         wbtc_weth_eft.mint(etfMint);
         assertEq(wbtc_weth_eft.balanceOf(user1), 100000 ether);
      }
+
 }
 
 contract erc20Token is ERC20 {
