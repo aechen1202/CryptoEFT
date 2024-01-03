@@ -11,7 +11,9 @@ import {WhitePaperInterestRateModel} from "../src/WhitePaperInterestRateModel.so
 import {SimplePriceOracle} from "../src/SimplePriceOracle.sol";
 import {CToken} from "../src/CToken.sol";
 import {ETFErc20} from "../src/ETFErc20.sol";
+import {ETFErc20Delegator} from "../src/ETFErc20Delegator.sol";
 import {ETFErc20InterFace} from "../src/ETFErc20InterFace.sol";
+
 
 
 contract ETFTest is Test {
@@ -112,14 +114,23 @@ contract ETFTest is Test {
                 minimum: 0.02 * 1e18
             });
         ETFList[1] = WETHElement;
+        
 
-        wbtc_weth_eft = new ETFErc20("wbtc_weth_eft", "wbtc_weth_eft",  "wbtc_weth_eft", ETFList);
+       ETFErc20 eft = new ETFErc20();
+
+       //initialize 参数 : name, symbol, description, token List, mantissa  
+       ETFErc20Delegator ETF_Proxy = new ETFErc20Delegator(
+            abi.encodeWithSelector(eft.initialize.selector, "wbtc_weth_eft", "BET"
+            , "wbtc_weth_eft", ETFList, 1e18),
+            address(eft)
+        );
+
+        //ETF UUPS Proxy
+        wbtc_weth_eft = ETFErc20(address(ETF_Proxy));
         wbtc_weth_eft._setComptroller(unitrollerProxy);
         //可以supportEFTMarket條件對應的cToken地址都需要supportMarket
         uint code = unitrollerProxy._supportEFTMarket(address(wbtc_weth_eft));
         assertEq(code, 0);
-
-      
     }
 
     //剛好數字比例的mint與redeem

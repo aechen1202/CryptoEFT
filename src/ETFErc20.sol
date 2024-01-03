@@ -5,12 +5,14 @@ import "./CTokenInterfaces.sol";
 import "./ETFErc20InterFace.sol";
 import "./ERC20/IERC20.sol";
 import "forge-std/console.sol";
+import "./UUPS/Slots.sol";
+import "./UUPS/Proxiable.sol";
 
 
-contract ETFErc20 is ETFErc20InterFace{
+contract ETFErc20 is ETFErc20InterFace,Slots,Proxiable{
   
     ETF[] public tokenElement;
-    uint mantissa = 1e18;
+    uint mantissa;
     
     //erc20
     string public name;
@@ -42,19 +44,23 @@ contract ETFErc20 is ETFErc20InterFace{
     address public admin;
     ComptrollerInterface public comptroller;
     bool _notEntered;
+    bool public initialized;
 
-    constructor(string memory _name, string memory _symbol, string memory _description, ETF[] memory _tokenElement) {
+    function initialize(string memory _name, string memory _symbol, string memory _description
+    , ETF[] memory _tokenElement, uint _mantissa) external {
+        require(initialized == false, "already initialized");
         name = _name;
         symbol = _symbol;
         description = _description;
         admin = msg.sender;
         interestBlockIndex = block.number;
         _notEntered = true;
+        mantissa = _mantissa;
         
         for (uint256 i = 0; i < _tokenElement.length; i++) {
             tokenElement.push(_tokenElement[i]);
         }
-       
+        initialized = true;
     }
 
     /**
@@ -65,6 +71,7 @@ contract ETFErc20 is ETFErc20InterFace{
     function mint(ETF[] memory inputToken) override external nonReentrant returns (uint) {
         //Recalculate
         uint percentage = 0;
+       
         for (uint i = 0; i < inputToken.length; i ++) {
             require(inputToken[i].token == tokenElement[i].token, "must same with tokenElement");
             require(inputToken[i].proportion >= tokenElement[i].minimum, "must greader than minimum");
@@ -74,6 +81,7 @@ contract ETFErc20 is ETFErc20InterFace{
             require(inputToken[i].proportion >= tokenElement[i].proportion * percentage, "error proportion");
             inputToken[i].proportion = tokenElement[i].proportion * percentage;
             inputToken[i].cToken = tokenElement[i].cToken;
+           
         }
 
         //Call controller to check
@@ -89,7 +97,6 @@ contract ETFErc20 is ETFErc20InterFace{
             uint code = CErc20Interface(inputToken[i].cToken).mint(inputToken[i].proportion);
             require( code == 0 , "cToken mint error");
         }
-
         //mint eftToken
         totalSupply = totalSupply + percentage * mantissa;
         accountTokens[msg.sender] = accountTokens[msg.sender] + percentage * mantissa;
@@ -340,5 +347,24 @@ contract ETFErc20 is ETFErc20InterFace{
         _notEntered = false;
         _;
         _notEntered = true; // get a gas-refund post-Istanbul
+    }
+
+    function proxiableUUID() public pure returns (bytes32) {
+        return bytes32(keccak256("PROXIABLE"));
+    }
+
+    function updateCodeAddress(address newImplementation, bytes memory data) external {
+        if (msg.sender != admin) {
+            //revert SetComptrollerOwnerCheck();
+            revert("only owner!!");
+        }
+        // 1. check if newimplementation is compatible with proxiable
+        require(Proxiable(newImplementation).proxiableUUID()==proxiableUUID()
+        , "no proxiableUUID function");
+        // 2. update the implementation address
+        _setSlotToAddress(bytes32(uint256(keccak256('PROXIABLE'))),newImplementation);
+        // 3. initialize proxy, if data exist, then initialize proxy with _data
+        (bool success,) = newImplementation.delegatecall(data);
+        require(success);
     }
 }
