@@ -22,6 +22,7 @@ abstract contract ETFErc20InterFace{
     function allowance(address owner, address spender) virtual external view returns (uint);
 
     function _setComptroller(ComptrollerInterface newComptroller) virtual public returns (bool);
+    function VERSION() external view virtual returns (string memory);
 
     
     /**

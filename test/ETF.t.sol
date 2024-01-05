@@ -11,6 +11,7 @@ import {WhitePaperInterestRateModel} from "../src/WhitePaperInterestRateModel.so
 import {SimplePriceOracle} from "../src/SimplePriceOracle.sol";
 import {CToken} from "../src/CToken.sol";
 import {ETFErc20} from "../src/ETFErc20.sol";
+import {ETFErc20v2} from "../src/UUPS/ETFErc20v2.sol";
 import {ETFErc20Delegator} from "../src/ETFErc20Delegator.sol";
 import {ETFErc20InterFace} from "../src/ETFErc20InterFace.sol";
 
@@ -302,6 +303,19 @@ contract ETFTest is Test {
         wbtc_weth_eft.mint(etfMint);
         assertEq(wbtc_weth_eft.balanceOf(user1), 100000 ether);
      }
+
+
+    // proxy測試
+    function test_proxy() public{
+        assertEq(wbtc_weth_eft.VERSION(), "0.0.1");
+       
+       //proxy update
+        ETFErc20v2 eftv2 = new ETFErc20v2();
+        wbtc_weth_eft.updateCodeAddress(address(eftv2)
+        ,abi.encodeWithSelector(eftv2.v2Initialize.selector));
+
+        assertEq(wbtc_weth_eft.VERSION(), "0.0.2");
+    }
 
 }
 

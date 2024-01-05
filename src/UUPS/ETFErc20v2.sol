@@ -1,17 +1,15 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity ^0.8.0;
-import "./ComptrollerInterface.sol";
-import "./CTokenInterfaces.sol";
-import "./ETFErc20InterFace.sol";
-import "./ERC20/IERC20.sol";
-import "forge-std/console.sol";
-import "./UUPS/Slots.sol";
-import "./UUPS/Proxiable.sol";
+import "./Slots.sol";
+import "./Proxiable.sol";
+import "../ComptrollerInterface.sol";
+import "../CTokenInterfaces.sol";
+import "../ETFErc20InterFace.sol";
+import "../ERC20/IERC20.sol";
 
 
-contract ETFErc20 is ETFErc20InterFace,Slots,Proxiable{
-  
-    ETF[] public tokenElement;
+contract ETFErc20v2 is ETFErc20InterFace,Slots,Proxiable{
+   ETF[] public tokenElement;
     uint mantissa;
     
     //erc20
@@ -45,22 +43,12 @@ contract ETFErc20 is ETFErc20InterFace,Slots,Proxiable{
     ComptrollerInterface public comptroller;
     bool _notEntered;
     bool public initialized;
+    bool public v2Initialized;
 
-    function initialize(string memory _name, string memory _symbol, string memory _description
-    , ETF[] memory _tokenElement, uint _mantissa) external {
-        require(initialized == false, "already initialized");
-        name = _name;
-        symbol = _symbol;
-        description = _description;
-        admin = msg.sender;
-        interestBlockIndex = block.number;
-        _notEntered = true;
-        mantissa = _mantissa;
-        
-        for (uint256 i = 0; i < _tokenElement.length; i++) {
-            tokenElement.push(_tokenElement[i]);
-        }
-        initialized = true;
+    function v2Initialize() external {
+        require(v2Initialized == false, "already initialized");
+       
+        v2Initialized = true;
     }
 
     /**
@@ -369,6 +357,6 @@ contract ETFErc20 is ETFErc20InterFace,Slots,Proxiable{
     }
 
     function VERSION() override external view returns (string memory) {
-        return "0.0.1";
+        return "0.0.2";
     }
 }
