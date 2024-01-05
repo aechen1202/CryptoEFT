@@ -32,9 +32,11 @@ contract ETFTest is Test {
     ETFErc20 public wbtc_weth_eft;
 
     address public admin = makeAddr("admin");
-    address public user1 = makeAddr("user1");
-    address public user2 = makeAddr("user2");
-    address public user3 = makeAddr("user3");
+    address public ethHolder1 = makeAddr("ethHolder1");
+    address public ethHolder2 = makeAddr("ethHolder2");
+    address public ethHolder3 = makeAddr("ethHolder3");
+    address public compoundBorrower1 = makeAddr("compoundBorrower1");
+    address public compoundBorrower2 = makeAddr("compoundBorrower2");
 
     function setUp() public {
         vm.startPrank(admin);
@@ -119,10 +121,10 @@ contract ETFTest is Test {
 
        ETFErc20 eft = new ETFErc20();
 
-       //initialize 参数 : name, symbol, description, token List, mantissa  
+       //initialize 参数 : name, symbol, decimals, description, token List, mantissa, interestBlockPrior  
        ETFErc20Delegator ETF_Proxy = new ETFErc20Delegator(
-            abi.encodeWithSelector(eft.initialize.selector, "wbtc_weth_eft", "BET"
-            , "wbtc_weth_eft", ETFList, 1e18),
+            abi.encodeWithSelector(eft.initialize.selector, "wbtc_weth_eft", "BET", 18
+            , "wbtc_weth_eft", ETFList, 1e18, 2102400),
             address(eft)
         );
 
@@ -136,9 +138,9 @@ contract ETFTest is Test {
 
     //剛好數字比例的mint與redeem
     function test_mint_redeem() public {
-        vm.startPrank(user1);
-        deal(address(wBTC), user1, 0.01 ether);
-        deal(address(wETH), user1, 0.2 ether);
+        vm.startPrank(ethHolder1);
+        deal(address(wBTC), ethHolder1, 0.01 ether);
+        deal(address(wETH), ethHolder1, 0.2 ether);
         ETFErc20InterFace.ETF[] memory etfMint = new ETFErc20InterFace.ETF[](2);
 
         ETFErc20InterFace.ETF memory WBTCElement = ETFErc20InterFace.ETF(
@@ -161,16 +163,16 @@ contract ETFTest is Test {
         wBTC.approve(address(wbtc_weth_eft),  0.01 * 1e18);
         wETH.approve(address(wbtc_weth_eft), 0.2 * 1e18);
         wbtc_weth_eft.mint(etfMint);
-        assertEq(wbtc_weth_eft.balanceOf(user1), 1 * 1e18);
-        assertEq(wBTC.balanceOf(user1), 0);
-        assertEq(wETH.balanceOf(user1), 0);
+        assertEq(wbtc_weth_eft.balanceOf(ethHolder1), 1 * 1e18);
+        assertEq(wBTC.balanceOf(ethHolder1), 0);
+        assertEq(wETH.balanceOf(ethHolder1), 0);
         assertEq(cWBTC.balanceOf(address(wbtc_weth_eft)), 0.01 * 1e18);
         assertEq(cWETH.balanceOf(address(wbtc_weth_eft)), 0.2 * 1e18);
 
-        wbtc_weth_eft.redeem(wbtc_weth_eft.balanceOf(user1));
-        assertEq(wbtc_weth_eft.balanceOf(user1), 0);
-        assertEq(wBTC.balanceOf(user1), 0.01 * 1e18);
-        assertEq(wETH.balanceOf(user1), 0.2 * 1e18);
+        wbtc_weth_eft.redeem(wbtc_weth_eft.balanceOf(ethHolder1));
+        assertEq(wbtc_weth_eft.balanceOf(ethHolder1), 0);
+        assertEq(wBTC.balanceOf(ethHolder1), 0.01 * 1e18);
+        assertEq(wETH.balanceOf(ethHolder1), 0.2 * 1e18);
         assertEq(cWBTC.balanceOf(address(wbtc_weth_eft)), 0);
         assertEq(cWETH.balanceOf(address(wbtc_weth_eft)), 0);
         
@@ -178,9 +180,9 @@ contract ETFTest is Test {
 
     //不正確比例的mint
     function test_mint_payback() public {
-        vm.startPrank(user1);
-        deal(address(wBTC), user1, 0.01 ether);
-        deal(address(wETH), user1, 0.3 ether);
+        vm.startPrank(ethHolder1);
+        deal(address(wBTC), ethHolder1, 0.01 ether);
+        deal(address(wETH), ethHolder1, 0.3 ether);
         ETFErc20InterFace.ETF[] memory etfMint = new ETFErc20InterFace.ETF[](2);
 
         ETFErc20InterFace.ETF memory WBTCElement = ETFErc20InterFace.ETF(
@@ -203,10 +205,10 @@ contract ETFTest is Test {
         wBTC.approve(address(wbtc_weth_eft),  0.01 * 1e18);
         wETH.approve(address(wbtc_weth_eft), 0.2 * 1e18);
         wbtc_weth_eft.mint(etfMint);
-        assertEq(wbtc_weth_eft.balanceOf(user1), 1 * 1e18);
-        assertEq(wBTC.balanceOf(user1), 0);
+        assertEq(wbtc_weth_eft.balanceOf(ethHolder1), 1 * 1e18);
+        assertEq(wBTC.balanceOf(ethHolder1), 0);
         //因為依比例只需要0.2 eth，而參數去傳入0.3 eth，但是合約實際只會接收0.2 eth
-        assertEq(wETH.balanceOf(user1), 0.1 * 1e18);
+        assertEq(wETH.balanceOf(ethHolder1), 0.1 * 1e18);
         assertEq(cWBTC.balanceOf(address(wbtc_weth_eft)), 0.01 * 1e18);
         assertEq(cWETH.balanceOf(address(wbtc_weth_eft)), 0.2 * 1e18);
         
@@ -215,9 +217,9 @@ contract ETFTest is Test {
     //單一user簡單claim利息
     function test_borrow_claim1() public {
         _EtfOneUserMint();
-        vm.startPrank(user2);
-        deal(address(wBTC), user2, 1000 ether);
-        deal(address(wETH), user2, 10000 ether);
+        vm.startPrank(compoundBorrower1);
+        deal(address(wBTC), compoundBorrower1, 1000 ether);
+        deal(address(wETH), compoundBorrower1, 10000 ether);
         wBTC.approve(address(cWBTC), type(uint256).max);
         wETH.approve(address(cWETH), type(uint256).max);
         cWBTC.mint(1000 ether);
@@ -227,31 +229,31 @@ contract ETFTest is Test {
         unitrollerProxy.enterMarkets(cTokenAddr);
         cWETH.borrow(100 ether);
         vm.roll(10000000);
-        cWETH.repayBorrow(cWETH.borrowBalanceCurrent(user2));
+        cWETH.repayBorrow(cWETH.borrowBalanceCurrent(compoundBorrower1));
 
-        deal(address(wBTC), user3, 5000 ether);
-        deal(address(wETH), user3, 100000 ether);
-        vm.startPrank(user3);
+        deal(address(wBTC), compoundBorrower2, 5000 ether);
+        deal(address(wETH), compoundBorrower2, 100000 ether);
+        vm.startPrank(compoundBorrower2);
         wBTC.approve(address(cWBTC), type(uint256).max);
         wETH.approve(address(cWETH), type(uint256).max);
-        cWETH.mint(wETH.balanceOf(user3));
+        cWETH.mint(wETH.balanceOf(compoundBorrower2));
         cTokenAddr[0] = address(cWETH);
         unitrollerProxy.enterMarkets(cTokenAddr);
         cWBTC.borrow(10 ether);
         vm.roll(100000000);
-        cWBTC.repayBorrow(cWBTC.borrowBalanceCurrent(user3));
+        cWBTC.repayBorrow(cWBTC.borrowBalanceCurrent(compoundBorrower2));
 
-        vm.startPrank(user1);
+        vm.startPrank(ethHolder1);
         //將cToken利息轉入ETF Contract
         wbtc_weth_eft.claimIntrerstToETF();
-        wbtc_weth_eft.redeem(wbtc_weth_eft.balanceOf(user1));
+        wbtc_weth_eft.redeem(wbtc_weth_eft.balanceOf(ethHolder1));
         //拿回原始數量代幣
-        assertEq(wBTC.balanceOf(user1), 1000 ether);
-        assertEq(wETH.balanceOf(user1), 20000 ether);
-        //user1 claim interest
+        assertEq(wBTC.balanceOf(ethHolder1), 1000 ether);
+        assertEq(wETH.balanceOf(ethHolder1), 20000 ether);
+        //ethHolder1 claim interest
         wbtc_weth_eft.claim();
-        assertGe(wBTC.balanceOf(user1), 1000 ether);
-        assertGe(wETH.balanceOf(user1), 20000 ether);
+        assertGe(wBTC.balanceOf(ethHolder1), 1000 ether);
+        assertGe(wETH.balanceOf(ethHolder1), 20000 ether);
         assertEq(wBTC.balanceOf(address(wbtc_weth_eft)), 0);
         assertEq(wETH.balanceOf(address(wbtc_weth_eft)), 0);
      }
@@ -259,26 +261,25 @@ contract ETFTest is Test {
     //erc20 testing
     function test_erc20() public {
         _EtfOneUserMint();
-        vm.startPrank(user1);
-        wbtc_weth_eft.transfer(user2, 10000 ether);
-        assertEq(wbtc_weth_eft.balanceOf(user1), 90000 ether);
-        assertEq(wbtc_weth_eft.balanceOf(user2), 10000 ether);
+        vm.startPrank(ethHolder1);
+        wbtc_weth_eft.transfer(ethHolder2, 10000 ether);
+        assertEq(wbtc_weth_eft.balanceOf(ethHolder1), 90000 ether);
+        assertEq(wbtc_weth_eft.balanceOf(ethHolder2), 10000 ether);
 
-        wbtc_weth_eft.approve(user2, 10000 ether);
-        assertEq(wbtc_weth_eft.allowance(user1, user2), 10000 ether);
+        wbtc_weth_eft.approve(ethHolder2, 10000 ether);
+        assertEq(wbtc_weth_eft.allowance(ethHolder1, ethHolder2), 10000 ether);
 
-        vm.startPrank(user2);
-        wbtc_weth_eft.transferFrom(user1, user3, 10000 ether);
-        assertEq(wbtc_weth_eft.balanceOf(user1), 80000 ether);
-        assertEq(wbtc_weth_eft.balanceOf(user3), 10000 ether);
+        vm.startPrank(ethHolder2);
+        wbtc_weth_eft.transferFrom(ethHolder1, ethHolder3, 10000 ether);
+        assertEq(wbtc_weth_eft.balanceOf(ethHolder1), 80000 ether);
+        assertEq(wbtc_weth_eft.balanceOf(ethHolder3), 10000 ether);
 
     }
-
     //單一User mint
      function _EtfOneUserMint() public{
-        vm.startPrank(user1);
-        deal(address(wBTC), user1, 1000 ether);
-        deal(address(wETH), user1, 20000 ether);
+        vm.startPrank(ethHolder1);
+        deal(address(wBTC), ethHolder1, 1000 ether);
+        deal(address(wETH), ethHolder1, 20000 ether);
         ETFErc20InterFace.ETF[] memory etfMint = new ETFErc20InterFace.ETF[](2);
 
         ETFErc20InterFace.ETF memory WBTCElement = ETFErc20InterFace.ETF(
@@ -301,7 +302,119 @@ contract ETFTest is Test {
         wBTC.approve(address(wbtc_weth_eft),  1000 ether);
         wETH.approve(address(wbtc_weth_eft),20000 ether);
         wbtc_weth_eft.mint(etfMint);
-        assertEq(wbtc_weth_eft.balanceOf(user1), 100000 ether);
+        assertEq(wbtc_weth_eft.balanceOf(ethHolder1), 100000 ether);
+     }
+     
+     //多user簡單claim利息
+    function test_borrow_claim2() public {
+        _EtfUsersMint();
+        vm.startPrank(compoundBorrower1);
+        deal(address(wBTC), compoundBorrower1, 1000 ether);
+        deal(address(wETH), compoundBorrower1, 10000 ether);
+        wBTC.approve(address(cWBTC), type(uint256).max);
+        wETH.approve(address(cWETH), type(uint256).max);
+        cWBTC.mint(1000 ether);
+
+        address[] memory cTokenAddr = new address[](1);
+        cTokenAddr[0] = address(cWBTC);
+        unitrollerProxy.enterMarkets(cTokenAddr);
+        cWETH.borrow(100 ether);
+        vm.roll(10000000);
+        cWETH.repayBorrow(cWETH.borrowBalanceCurrent(compoundBorrower1));
+
+        deal(address(wBTC), compoundBorrower2, 5000 ether);
+        deal(address(wETH), compoundBorrower2, 100000 ether);
+        vm.startPrank(compoundBorrower2);
+        wBTC.approve(address(cWBTC), type(uint256).max);
+        wETH.approve(address(cWETH), type(uint256).max);
+        cWETH.mint(wETH.balanceOf(compoundBorrower2));
+        cTokenAddr[0] = address(cWETH);
+        unitrollerProxy.enterMarkets(cTokenAddr);
+        cWBTC.borrow(10 ether);
+        vm.roll(100000000);
+        cWBTC.repayBorrow(cWBTC.borrowBalanceCurrent(compoundBorrower2));
+
+        vm.startPrank(ethHolder1);
+        //將cToken利息轉入ETF Contract
+        wbtc_weth_eft.claimIntrerstToETF();
+        wbtc_weth_eft.redeem(wbtc_weth_eft.balanceOf(ethHolder1));
+        //拿回原始數量代幣
+        assertEq(wBTC.balanceOf(ethHolder1), 1000 ether);
+        assertEq(wETH.balanceOf(ethHolder1), 20000 ether);
+        //ethHolder1 claim interest
+        wbtc_weth_eft.claim();
+        assertGe(wBTC.balanceOf(ethHolder1), 1000 ether);
+        assertGe(wETH.balanceOf(ethHolder1), 20000 ether);
+
+        vm.startPrank(ethHolder2);
+        //因為間隔要大於約一年
+        vm.expectRevert("block number not allow to claim");
+        wbtc_weth_eft.claimIntrerstToETF();
+        wbtc_weth_eft.redeem(wbtc_weth_eft.balanceOf(ethHolder2));
+        //拿回原始數量代幣
+        assertEq(wBTC.balanceOf(ethHolder2), 100 ether);
+        assertEq(wETH.balanceOf(ethHolder2), 2000 ether);
+        //ethHolder2 claim interest
+        wbtc_weth_eft.claim();
+        assertGe(wBTC.balanceOf(ethHolder2), 100 ether);
+        assertGe(wETH.balanceOf(ethHolder2), 2000 ether);
+     }
+
+     //多User mint
+     function _EtfUsersMint() public{
+        vm.startPrank(ethHolder1);
+        deal(address(wBTC), ethHolder1, 1000 ether);
+        deal(address(wETH), ethHolder1, 20000 ether);
+        ETFErc20InterFace.ETF[] memory etfMint = new ETFErc20InterFace.ETF[](2);
+
+        ETFErc20InterFace.ETF memory WBTCElement1 = ETFErc20InterFace.ETF(
+            {
+                token: address(wBTC),
+                cToken: address(0),
+                proportion: 1000 ether,
+                minimum: 0
+            });
+        etfMint[0] = WBTCElement1;
+
+        ETFErc20InterFace.ETF memory WETHElement1 = ETFErc20InterFace.ETF(
+            {
+                token: address(wETH),
+                cToken: address(0),
+                proportion: 20000 ether,
+                minimum: 0
+            });
+        etfMint[1] = WETHElement1;
+        wBTC.approve(address(wbtc_weth_eft),  1000 ether);
+        wETH.approve(address(wbtc_weth_eft),20000 ether);
+        wbtc_weth_eft.mint(etfMint);
+        assertEq(wbtc_weth_eft.balanceOf(ethHolder1), 100000 ether);
+
+        vm.startPrank(ethHolder2);
+        deal(address(wBTC), ethHolder2, 100 ether);
+        deal(address(wETH), ethHolder2, 2000 ether);
+
+        ETFErc20InterFace.ETF[] memory etfMint2 = new ETFErc20InterFace.ETF[](2);
+        ETFErc20InterFace.ETF memory WBTCElement2 = ETFErc20InterFace.ETF(
+            {
+                token: address(wBTC),
+                cToken: address(0),
+                proportion: 100 ether,
+                minimum: 0
+            });
+        etfMint2[0] = WBTCElement2;
+
+        ETFErc20InterFace.ETF memory WETHElement2 = ETFErc20InterFace.ETF(
+            {
+                token: address(wETH),
+                cToken: address(0),
+                proportion: 2000 ether,
+                minimum: 0
+            });
+        etfMint2[1] = WETHElement2;
+        wBTC.approve(address(wbtc_weth_eft),  100 ether);
+        wETH.approve(address(wbtc_weth_eft),2000 ether);
+        wbtc_weth_eft.mint(etfMint2);
+        assertEq(wbtc_weth_eft.balanceOf(ethHolder2), 10000 ether);
      }
 
 

@@ -356,7 +356,7 @@ contract ETFErc20v2 is ETFErc20InterFace,Slots,Proxiable{
         require(success);
     }
 
-    function VERSION() override external view returns (string memory) {
+    function VERSION() override external pure returns (string memory) {
         return "0.0.2";
     }
 }

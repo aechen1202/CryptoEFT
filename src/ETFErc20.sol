@@ -17,7 +17,7 @@ contract ETFErc20 is ETFErc20InterFace,Slots,Proxiable{
     //erc20
     string public name;
     string public symbol;
-    uint8 public decimals = 18;
+    uint8 public decimals;
     uint public totalSupply;
     string public description;
     mapping (address => uint) internal accountTokens;
@@ -25,7 +25,7 @@ contract ETFErc20 is ETFErc20InterFace,Slots,Proxiable{
     mapping (address => mapping (address => uint)) internal transferAllowances;
     
     //interest
-    uint interestBlockPrior = 2102400;
+    uint interestBlockPrior;
     struct interest { 
         address token;
         uint interest;
@@ -46,16 +46,18 @@ contract ETFErc20 is ETFErc20InterFace,Slots,Proxiable{
     bool _notEntered;
     bool public initialized;
 
-    function initialize(string memory _name, string memory _symbol, string memory _description
-    , ETF[] memory _tokenElement, uint _mantissa) external {
+    function initialize(string memory _name, string memory _symbol,uint8 _decimals, string memory _description
+    , ETF[] memory _tokenElement, uint _mantissa,uint _interestBlockPrior) external {
         require(initialized == false, "already initialized");
         name = _name;
         symbol = _symbol;
+        decimals = _decimals;
         description = _description;
         admin = msg.sender;
         interestBlockIndex = block.number;
         _notEntered = true;
         mantissa = _mantissa;
+        interestBlockPrior = _interestBlockPrior;
         
         for (uint256 i = 0; i < _tokenElement.length; i++) {
             tokenElement.push(_tokenElement[i]);
@@ -133,7 +135,8 @@ contract ETFErc20 is ETFErc20InterFace,Slots,Proxiable{
      * @return bool true=success
     */
     function claimIntrerstToETF() override external nonReentrant returns (bool) {
-        require((block.number-interestBlockIndex)>=interestBlockPrior,"block number not allow to claim");
+        require((block.number-interestBlockIndex)>interestBlockPrior,"block number not allow to claim");
+        interestBlockIndex = block.number;
         //interestHistory
         interestBlock storage _interestBlock = interestHistory.push();
         _interestBlock.blockNumber = block.number;
@@ -368,7 +371,7 @@ contract ETFErc20 is ETFErc20InterFace,Slots,Proxiable{
         require(success);
     }
 
-    function VERSION() override external view returns (string memory) {
+    function VERSION() override external pure returns (string memory) {
         return "0.0.1";
     }
 }
