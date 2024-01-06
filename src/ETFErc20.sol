@@ -78,10 +78,10 @@ contract ETFErc20 is ETFErc20InterFace,Slots,Proxiable{
             require(inputToken[i].token == tokenElement[i].token, "must same with tokenElement");
             require(inputToken[i].proportion >= tokenElement[i].minimum, "must greader than minimum");
             if(i == 0){
-                percentage = inputToken[i].proportion / tokenElement[i].proportion;
+                percentage = (inputToken[i].proportion * mantissa) / tokenElement[i].proportion;
             }
-            require(inputToken[i].proportion >= tokenElement[i].proportion * percentage, "error proportion");
-            inputToken[i].proportion = tokenElement[i].proportion * percentage;
+            require(inputToken[i].proportion >= tokenElement[i].proportion * percentage / mantissa, "error proportion");
+            inputToken[i].proportion = tokenElement[i].proportion * percentage / mantissa;
             inputToken[i].cToken = tokenElement[i].cToken;
            
         }
@@ -100,12 +100,12 @@ contract ETFErc20 is ETFErc20InterFace,Slots,Proxiable{
             require( code == 0 , "cToken mint error");
         }
         //mint eftToken
-        totalSupply = totalSupply + percentage * mantissa;
-        accountTokens[msg.sender] = accountTokens[msg.sender] + percentage * mantissa;
+        totalSupply = totalSupply + percentage;
+        accountTokens[msg.sender] = accountTokens[msg.sender] + percentage;
         holders.push(msg.sender);
 
-        emit Mint(msg.sender, inputToken, percentage * mantissa);
-        return percentage * mantissa;
+        emit Mint(msg.sender, inputToken, percentage);
+        return percentage;
     }
 
     /**
