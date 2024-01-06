@@ -91,8 +91,8 @@ contract ETFTest is Test {
         priceOracle.setUnderlyingPrice(CToken(address(cWETH)),2000 * 1e18);
 
         //cWBTC,cWETH 的 collateral factor 為 90%
-        unitrollerProxy._setCollateralFactor(CToken(address(cWBTC)),1e17);
-        unitrollerProxy._setCollateralFactor(CToken(address(cWETH)),1e17);
+        unitrollerProxy._setCollateralFactor(CToken(address(cWBTC)),0.9 * 1e18);
+        unitrollerProxy._setCollateralFactor(CToken(address(cWETH)),0.9 * 1e18);
 
         //ETF Token
         //1顆EFT = 0.01 wBTC + 0.2 wETH
