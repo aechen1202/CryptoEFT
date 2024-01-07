@@ -36,18 +36,37 @@
 
 
 
-1)ETF setting:佈署新的EFT Token後必須將比例與資料使用admin帳號在controller介面做開通
+* supportEFTMarket支援etf market: admin管理者可使用此方法將部屬好的ETF合約地址在CONTROLLER註冊，不然MINT時候會不通過
 
-admin =set ETF=> controller Contract
+### INTERFACE
+ETFErc20InterFace
+
+     struct ETF { 
+        address token;
+        address cToken;
+        uint proportion;
+        uint minimum;
+    }
+    function mint(ETF[] memory inputToken) virtual external returns (uint);
+    function redeem(uint redeemETF) virtual external returns (uint);
+    function getName() virtual external view returns (string memory);
+    function claimIntrerstToETF() virtual external returns (bool);
+    function claim() virtual external returns (bool);
+    function getDescription() virtual external view returns (string memory);
+    function getTokenElement() virtual external view returns (ETF[] memory);
+   
+    function balanceOf(address account) virtual external view returns (uint256);
+    function transfer(address dst, uint amount) virtual external returns (bool);
+    function transferFrom(address src, address dst, uint amount) virtual external returns (bool);
+    function approve(address spender, uint amount) virtual external returns (bool);
+    function allowance(address owner, address spender) virtual external view returns (uint);
+
+    function _setComptroller(ComptrollerInterface newComptroller) virtual public returns (bool);
+    function VERSION() external view virtual returns (string memory);
+
+ComptrollerInterface
+
+    function mintETFAllowed(address eftToken) virtual external view returns (uint);
+    function _supportEFTMarket(address eftToken) external returns (uint)
 
 
-2.變更
-
-與Compound v2比較做了以下變更
-
-* 新增EFT Token合約
-* 變更利息申請方式(?)
-* 移除COM Token相關治理功能
-* 將comtroller改名為controller
-* 於controller新增ETF Token設定相關方法
-```
