@@ -69,4 +69,15 @@ ComptrollerInterface
     function mintETFAllowed(address eftToken) virtual external view returns (uint);
     function _supportEFTMarket(address eftToken) external returns (uint)
 
+## foundry test
+git clone https://github.com/aechen1202/CryptoETF.git
+
+cd CryptoETF
+
+forge build
+
+forge test
+
+
+
 
