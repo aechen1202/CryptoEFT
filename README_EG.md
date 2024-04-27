@@ -9,8 +9,9 @@ In terms of its structure, this product is an ETF portfolio token combined with 
 
 
 ### Role
-* Users使用者:參與指數追蹤的一般使用者，可以依指定比例原生Token存入鑄造等比的ETF Token，此ETF Token是個ERC20協議支援ERC20協議功能，使用者可以申請持有期間的利息，如果使用者需要解除此EFT Token也可以註銷此代幣因而獲得原始比例的原生代幣
-* admin管理者:管理者負責篩選好品質的原生代幣並且設定既有比例，設定完畢此ETF Token組成的原生代幣與比例則不可變更
+* Users: General participants in index tracking can deposit native tokens in a designated proportion to mint corresponding ETF tokens. These ETF tokens are ERC20 protocol compliant, supporting ERC20 functionalities. Users can claim interest during the holding period. If users wish to redeem the ETF tokens, they can also burn them to receive the original proportion of native tokens.
+* Admin: The administrator is responsible for curating high-quality native tokens and setting their respective proportions. Once set, the composition and proportions of the native tokens comprising the ETF token cannot be altered.
+
 ### Interface
 * mint鑄造:呼叫EFT Contract mint方法並且傳送原生代幣(ig.weth.wbtc)至EFT Contract，EFT Contract會立刻傳入Compound cToken Contract的mint返回對應的cToken存在EFT Contract，EFT Contract會記錄該使用者所屬的cToken與block index等資料
 
