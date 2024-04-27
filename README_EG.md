@@ -1,6 +1,5 @@
 ## CryptoETF
-
-許多金融領域都有類似ETF包裝商品，藉由一籃子標的去追蹤某個指數，而在區塊鏈以太坊上也應該需要有類似ETF的追蹤代幣，但是單純將原生代幣存入鑄造新的ETF代幣原生代幣鎖在合約不動很可惜，所以結合Compound將原生代幣拿去借貸賺取利息，此協議可以藉此賺取手續費，長期持有者也可以收到利息回饋等激勵
+Many financial sectors have similar ETF-packaged products, which track a certain index through a basket of assets. Similarly, on the Ethereum blockchain, there should be tracking tokens similar to ETFs. However, simply depositing native tokens to mint new ETF tokens and locking the native tokens in a contract without movement is a waste. Therefore, combining Compound to lend out native tokens to earn interest, this protocol can generate transaction fees. Long-term holders can also receive interest rewards and other incentives.
 
 ## 說明
 以架構而言此產品為ETF組合Token與結合Compound v2的借貸協議商品，以便使用者可以追蹤指數與領取固定利息收入
