@@ -1,14 +1,14 @@
 ## CryptoETF
 Many financial sectors have similar ETF-packaged products, which track a certain index through a basket of assets. Similarly, on the Ethereum blockchain, there should be tracking tokens similar to ETFs. However, simply depositing native tokens to mint new ETF tokens and locking the native tokens in a contract without movement is a waste. Therefore, combining Compound to lend out native tokens to earn interest, this protocol can generate transaction fees. Long-term holders can also receive interest rewards and other incentives.
 
-## 說明
-以架構而言此產品為ETF組合Token與結合Compound v2的借貸協議商品，以便使用者可以追蹤指數與領取固定利息收入
+## Direction
+In terms of its structure, this product is an ETF portfolio token combined with the Compound v2 lending protocol, enabling users to track indices and receive fixed interest income.
 
-### 架構
+### Structure
 ![image](https://github.com/aechen1202/CryptoETF/assets/16042619/3aafffc4-0a9c-4694-b664-ab18880ba8b2)
 
 
-### 角色
+### Role
 * Users使用者:參與指數追蹤的一般使用者，可以依指定比例原生Token存入鑄造等比的ETF Token，此ETF Token是個ERC20協議支援ERC20協議功能，使用者可以申請持有期間的利息，如果使用者需要解除此EFT Token也可以註銷此代幣因而獲得原始比例的原生代幣
 * admin管理者:管理者負責篩選好品質的原生代幣並且設定既有比例，設定完畢此ETF Token組成的原生代幣與比例則不可變更
 ### Interface
