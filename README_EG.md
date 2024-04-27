@@ -13,30 +13,29 @@ In terms of its structure, this product is an ETF portfolio token combined with 
 * Admin: The administrator is responsible for curating high-quality native tokens and setting their respective proportions. Once set, the composition and proportions of the native tokens comprising the ETF token cannot be altered.
 
 ### Interface
-* mint鑄造:呼叫EFT Contract mint方法並且傳送原生代幣(ig.weth.wbtc)至EFT Contract，EFT Contract會立刻傳入Compound cToken Contract的mint返回對應的cToken存在EFT Contract，EFT Contract會記錄該使用者所屬的cToken與block index等資料
+* Mint: The process involves calling the mint method of the ETF contract and transferring native tokens (e.g., WETH, WBTC) to the ETF contract. The ETF contract then immediately sends the corresponding native tokens to the Compound cToken contract to mint cToken. Subsequently, the ETF contract records information such as the user's associated cToken and block index.
 
 ![image](https://github.com/aechen1202/CryptoETF/assets/16042619/258b4eee-094e-43ac-9168-e81cccb020b4)
 
 
-* claim申請利息:呼叫EFT Contract claim方法獲得原生代幣利息
+* Interest Claim: To claim interest, one would invoke the claim method of the ETF contract to obtain interest in native tokens.
 
 ![image](https://github.com/aechen1202/CryptoETF/assets/16042619/15c69791-56af-4c26-873c-331dcd544870)
 
 
-* claimIntrerstToETF將利息轉入ETF合約:由使用者呼叫將compound cToken利息轉入ETF合約內，暫定一年左右的block時間間隔可呼叫
+* Interest Transfer to ETF: Users call the "claimInterestToETF" function to transfer Compound cToken interest into the ETF contract. This can be called at intervals of approximately one year, based on block time.
 
 ![image](https://github.com/aechen1202/CryptoETF/assets/16042619/bfa3d209-8527-4cd0-9609-1f2c5a3dc9bb)
 
 
 
-* redeem解除代幣:呼叫EFT Contract redeem解除代幣，使用者會獲得應有比例的原始代幣
-
+* Redemption: Users call the "redeem" function of the ETF contract to redeem tokens, obtaining the original native tokens in the proportion corresponding to their holdings.幣
 
 ![image](https://github.com/aechen1202/CryptoETF/assets/16042619/9cb6d8e1-3dd1-4d80-b1f6-86aaab976024)
 
 
 
-* supportEFTMarket支援etf market: admin管理者可使用此方法將部屬好的ETF合約地址在CONTROLLER註冊，不然MINT時候會不通過
+* Support ETF Market: Admins can utilize this method to register the deployed ETF contract address in the CONTROLLER. Without this registration, minting may not proceed successfully.
 
 ### INTERFACE
 ETFErc20InterFace
