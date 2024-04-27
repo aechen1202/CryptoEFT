@@ -1,4 +1,4 @@
-[中文] (README.md)/ English
+[中文](README.md)/ English
 
 ## CryptoETF
 Many financial sectors have similar ETF-packaged products, which track a certain index through a basket of assets. Similarly, on the Ethereum blockchain, there should be tracking tokens similar to ETFs. However, simply depositing native tokens to mint new ETF tokens and locking the native tokens in a contract without movement is a waste. Therefore, combining Compound to lend out native tokens to earn interest, this protocol can generate transaction fees. Long-term holders can also receive interest rewards and other incentives.
